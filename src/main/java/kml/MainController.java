@@ -56,9 +56,11 @@ public class MainController {
 		this.updateStatus("Downloading update file...");
 		this.updateStatus("Update Size: " + fileSize + " bytes", true);
 
-		String name = UPDATE_URL.substring(UPDATE_URL.lastIndexOf("/") + 1, UPDATE_URL.length());
+		String name = UPDATE_URL.substring(UPDATE_URL.lastIndexOf("/") + 1, UPDATE_URL.lastIndexOf("."));
+		String extension = UPDATE_URL.substring(UPDATE_URL.lastIndexOf(".") + 1, UPDATE_URL.length());
+		File outputFile = new File(name + ".tmp");
 
-		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(new File(name)));
+		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
 		byte[]               buffer               = new byte[32 * 1024];
 		int                  bytesRead;
 		double               sumCount             = 0.0;
@@ -73,6 +75,8 @@ public class MainController {
 		bufferedOutputStream.flush();
 		bufferedOutputStream.close();
 		inputStream.close();
+
+		outputFile.renameTo(new File(name + "." + extension));
 
 		this.updateStatus("Finished downloading update.");
 	}
