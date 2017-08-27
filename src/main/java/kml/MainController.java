@@ -3,7 +3,6 @@ package kml;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.net.URL;
@@ -57,7 +56,11 @@ public class MainController {
 		this.updateStatus("Downloading update file...");
 		this.updateStatus("Update Size: " + fileSize + " bytes", true);
 
-		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(new File(FilenameUtils.getName(this.UPDATE_URL))));
+		String name = UPDATE_URL.substring(UPDATE_URL.lastIndexOf("/") + 1, UPDATE_URL.lastIndexOf("."));
+		String extension = UPDATE_URL.substring(UPDATE_URL.lastIndexOf(".") + 1, UPDATE_URL.length());
+		File outputFile = new File(name + ".tmp");
+
+		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
 		byte[]               buffer               = new byte[32 * 1024];
 		int                  bytesRead;
 		double               sumCount             = 0.0;
@@ -72,6 +75,8 @@ public class MainController {
 		bufferedOutputStream.flush();
 		bufferedOutputStream.close();
 		inputStream.close();
+
+		outputFile.renameTo(new File(name + "." + extension));
 
 		this.updateStatus("Finished downloading update.");
 	}
@@ -94,7 +99,8 @@ public class MainController {
 		InputStream  inputStream  = this.getClass().getClassLoader().getResourceAsStream(name);
 		OutputStream outputStream = null;
 		try {
-			outputStream = new FileOutputStream(FilenameUtils.getName(name));
+			String fileName = name.substring(name.lastIndexOf("/") + 1, name.length());
+			outputStream = new FileOutputStream(fileName);
 			int    read;
 			byte[] bytes = new byte[1024];
 			while ((read = inputStream.read(bytes)) != -1) {

@@ -17,6 +17,7 @@ public class Main extends Application {
 
         primaryStage.setTitle("Krothium Launcher Updater");
         primaryStage.setScene(new Scene(root));
+        primaryStage.setOnCloseRequest((e) -> System.exit(0));
         primaryStage.show();
 
         MainController mainController = loader.getController();
