@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 
 public class MainController {
 
-	private String UPDATE_URL = "http://mc.krothium.com/content/Krothium_Launcher"; // Direct link
+	private final String UPDATE_URL = "http://mc.krothium.com/content/Krothium_Launcher"; // Direct link
 
 	@FXML private ProgressBar progressBar;
 	@FXML private Label       currentProcess;
@@ -39,7 +39,7 @@ public class MainController {
 			try {
 				this.downloadFile(jar);
 				this.launchFile(jar);
-				this.cleanUp();
+				System.exit(0);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 				this.updateStatus("An error occurred while preforming update!");
@@ -110,55 +110,6 @@ public class MainController {
 		}
 		return OS.UNKNOWN;
 	}
-
-
-	private void cleanUp() throws Exception {
-		String  OS      = System.getProperty("os.name").toLowerCase();
-		Runtime runtime = Runtime.getRuntime();
-		if (OS.contains("win")) {
-			this.copyResource("scripts/windows_cleanup.bat");
-			runtime.exec("windows_cleanup.bat");
-		} else if (OS.contains("mac") || OS.contains("nix") || OS.contains("nux") || OS.contains("aix")) {
-			this.copyResource("scripts/linux_cleanup.sh");
-			runtime.exec("sh linux_cleanup.sh");
-		}
-		System.exit(0);
-	}
-
-	private void copyResource(String name) {
-
-		InputStream  inputStream  = this.getClass().getClassLoader().getResourceAsStream(name);
-		OutputStream outputStream = null;
-		try {
-			String fileName = name.substring(name.lastIndexOf("/") + 1, name.length());
-			outputStream = new FileOutputStream(fileName);
-			int    read;
-			byte[] bytes = new byte[1024];
-			while ((read = inputStream.read(bytes)) != -1) {
-				outputStream.write(bytes, 0, read);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (inputStream != null) {
-				try {
-					inputStream.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			if (outputStream != null) {
-				try {
-					// outputStream.flush();
-					outputStream.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-			}
-		}
-	}
-
 	private void updateStatus(String status) {
 		updateStatus(status, false);
 	}
