@@ -17,8 +17,7 @@ import java.time.format.DateTimeFormatter;
 
 public class MainController {
 
-	// Dummy link
-	private final String UPDATE_URL = "http://speedtest.ftp.otenet.gr/files/test1Mb.db"; // Direct link
+	private String UPDATE_URL = "http://mc.krothium.com/content/Krothium_Launcher"; // Direct link
 
 	@FXML private ProgressBar progressBar;
 	@FXML private Label       currentProcess;
@@ -27,18 +26,19 @@ public class MainController {
 	@FXML private TitledPane consolePane;
 	@FXML private Accordion  consoleAccordion;
 
-	public void startUpdate() {
+	public void startUpdate(File jarToUpdate) {
 		// Autoextend console
 		this.consoleAccordion.setExpandedPane(this.consolePane);
 
 		this.updateStatus("Contacting update server...");
-		this.initDownload();
+		this.initDownload(jarToUpdate);
 	}
 
-	private void initDownload() {
+	private void initDownload(File jar) {
 		new Thread(() -> {
 			try {
-				this.downloadFile();
+				this.downloadFile(jar);
+				this.launchFile(jar);
 				this.cleanUp();
 			} catch (Exception ex) {
 				ex.printStackTrace();
@@ -47,18 +47,18 @@ public class MainController {
 		}).start();
 	}
 
-	private void downloadFile() throws IOException {
-		URL           url           = new URL(this.UPDATE_URL);
+	private void downloadFile(File jar) throws Exception {
+		String absolutePath = jar.getAbsolutePath();
+		String extension = absolutePath.substring(absolutePath.lastIndexOf("."), absolutePath.length());
+		File outputFile = new File(absolutePath.replace(extension, ".tmp"));
+
+		URL           url           = new URL(this.UPDATE_URL + extension);
 		URLConnection urlConnection = url.openConnection();
 		InputStream   inputStream   = urlConnection.getInputStream();
 		long          fileSize      = urlConnection.getContentLength();
 
 		this.updateStatus("Downloading update file...");
 		this.updateStatus("Update Size: " + fileSize + " bytes", true);
-
-		String name = UPDATE_URL.substring(UPDATE_URL.lastIndexOf("/") + 1, UPDATE_URL.lastIndexOf("."));
-		String extension = UPDATE_URL.substring(UPDATE_URL.lastIndexOf(".") + 1, UPDATE_URL.length());
-		File outputFile = new File(name + ".tmp");
 
 		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
 		byte[]               buffer               = new byte[32 * 1024];
@@ -76,10 +76,41 @@ public class MainController {
 		bufferedOutputStream.close();
 		inputStream.close();
 
-		outputFile.renameTo(new File(name + "." + extension));
-
+		if (!jar.delete()) {
+			throw new Exception("We couldn't delete the old version file.");
+		}
+		if (!outputFile.renameTo(jar)) {
+			throw new Exception("Failed to update the existing file.");
+		}
 		this.updateStatus("Finished downloading update.");
 	}
+
+	private void launchFile(File jar) throws IOException{
+		ProcessBuilder pb = new ProcessBuilder(getJavaDir(), "-jar", jar.getAbsolutePath());
+		pb.start();
+	}
+
+	public static String getJavaDir() {
+		final String separator = System.getProperty("file.separator");
+		final String path = System.getProperty("java.home") + separator + "bin" + separator;
+		if (getPlatform() == OS.WINDOWS && new File(path + "javaw.exe").isFile()) {
+			return path + "javaw.exe";
+		}
+		return path + "java";
+	}
+
+	public static OS getPlatform() {
+		final String osName = System.getProperty("os.name").toLowerCase();
+		if (osName.contains("win")) {
+			return OS.WINDOWS;
+		} else if (osName.contains("mac")) {
+			return OS.OSX;
+		} else if (osName.contains("linux") || osName.contains("unix")) {
+			return OS.LINUX;
+		}
+		return OS.UNKNOWN;
+	}
+
 
 	private void cleanUp() throws Exception {
 		String  OS      = System.getProperty("os.name").toLowerCase();
