@@ -6,7 +6,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.io.File;
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class Main extends Application {
@@ -29,7 +31,8 @@ public class Main extends Application {
         primaryStage.show();
 
         MainController mainController = loader.getController();
-        File jar = new File(parameters.get(0));
+        URL url = new URL("file://" + parameters.get(0));
+        File jar = Paths.get(url.toURI()).toFile();
         if (jar.exists() && jar.isFile()) {
             mainController.startUpdate(jar);
         } else {
