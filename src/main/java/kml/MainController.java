@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 
 public class MainController {
 
-	private final String UPDATE_URL = "http://mc.krothium.com/content/Krothium_Launcher"; // Direct link
+	private final String UPDATE_URL = "http://mc.krothium.com/content/download.php"; // Direct link
 
 	@FXML private ProgressBar progressBar;
 	@FXML private Label       currentProcess;
@@ -37,8 +37,7 @@ public class MainController {
 	private void initDownload(File jar) {
 		new Thread(() -> {
 			try {
-				this.downloadFile(jar);
-				this.launchFile(jar);
+				this.launchFile(this.downloadFile(jar));
 				System.exit(0);
 			} catch (Exception ex) {
 				ex.printStackTrace();
@@ -47,12 +46,30 @@ public class MainController {
 		}).start();
 	}
 
-	private void downloadFile(File jar) throws Exception {
+	private File downloadFile(File jar) throws Exception {
 		String absolutePath = jar.getAbsolutePath();
-		String extension = absolutePath.substring(absolutePath.lastIndexOf("."), absolutePath.length());
-		File outputFile = new File(absolutePath.replace(extension, ".tmp"));
-
-		URL           url           = new URL(this.UPDATE_URL + extension);
+		String fileName = jar.getName();
+		String oldExtension = "";
+		if (fileName.lastIndexOf(".") != -1) {
+			oldExtension = fileName.substring(fileName.lastIndexOf("."), fileName.length());
+		}
+		OS platform = getPlatform();
+		String extension = "";
+		if (platform == OS.WINDOWS) {
+			extension = ".exe";
+		} else if (platform == OS.UNKNOWN) {
+			extension = ".jar";
+		}
+		String newFileName;
+		if (oldExtension.isEmpty()) {
+			newFileName = fileName + extension;
+		} else {
+			newFileName = fileName.replace(oldExtension, extension);
+		}
+		File outputFile = new File(jar.getParent(), newFileName + ".tmp");
+		File newFile = new File(jar.getParent(), newFileName);
+		String query = "?o=" + platform.name() + "&a=" + getOSArch().name();
+		URL           url           = new URL(this.UPDATE_URL + query);
 		URLConnection urlConnection = url.openConnection();
 		InputStream   inputStream   = urlConnection.getInputStream();
 		long          fileSize      = urlConnection.getContentLength();
@@ -79,10 +96,11 @@ public class MainController {
 		if (!jar.delete()) {
 			throw new Exception("We couldn't delete the old version file.");
 		}
-		if (!outputFile.renameTo(jar)) {
+		if (!outputFile.renameTo(newFile)) {
 			throw new Exception("Failed to update the existing file.");
 		}
 		this.updateStatus("Finished downloading update.");
+		return newFile;
 	}
 
 	private void launchFile(File jar) throws IOException{
@@ -110,6 +128,13 @@ public class MainController {
 		}
 		return OS.UNKNOWN;
 	}
+
+	public static OSArch getOSArch() {
+		String arch = System.getProperty("os.arch");
+		String realArch = arch.endsWith("64") ? "64" : "32";
+		return "32".equals(realArch) ? OSArch.OLD : OSArch.NEW;
+	}
+
 	private void updateStatus(String status) {
 		updateStatus(status, false);
 	}
